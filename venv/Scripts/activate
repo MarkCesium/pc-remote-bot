@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="D:\programming\Python projects\pc-remote-bot\venv"
+VIRTUAL_ENV="D:\python projects\pc-remote-bot\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
