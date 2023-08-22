@@ -7,7 +7,7 @@ import pyautogui
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 from config import TOKEN_BOT
-from keyboards import start_kb, chrome_kb
+from keyboards import start_kb, chrome_kb, pc_inline_kb
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN_BOT)
@@ -79,8 +79,23 @@ async def open_steam(message):
 
 @dp.message_handler(Text(equals="Гаси ебало💤"))
 async def os_shutdown(message: types.Message):
-    await message.answer(text='бб')
+    await Remote.pc.set()
+    await message.answer('Точно?', reply_markup=pc_inline_kb())
+
+
+@dp.callback_query_handler(lambda c: c.data == 'yes', state=Remote.pc)
+async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
+    await state.reset_state()
+    await callback_query.answer()
+    await callback_query.message.delete()
     os.system("shutdown -s -t 0")
+
+
+@dp.callback_query_handler(lambda c: c.data == 'no', state=Remote.pc)
+async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
+    await state.reset_state()
+    await callback_query.answer()
+    await callback_query.message.delete()
 
 
 if __name__ == "__main__":
