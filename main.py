@@ -61,6 +61,7 @@ async def open_yt(message: types.Message):
 @dp.message_handler(Text(equals=("Назад❌")), state=Remote.chrome)
 async def all_chrome(message: types.Message, state: FSMContext):
     await state.reset_state()
+    pyautogui.hotkey('alt', 'f4')
     await message.answer("Chrome закрыт", reply_markup=start_kb())
 
 
