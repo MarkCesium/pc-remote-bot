@@ -8,10 +8,18 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 from config import TOKEN_BOT
 from keyboards import start_kb, chrome_kb, pc_inline_kb
+import webbrowser as wb
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN_BOT)
 dp = Dispatcher(bot, storage=storage)
+
+
+# TODO: state class Chrome and more
+# class Chrome(StatesGroup):
+#     base = State()
+#     yt = State()
+#     spotify = State()
 
 
 class Remote(StatesGroup):
@@ -39,13 +47,13 @@ async def take_screenshot(message):
 @dp.message_handler(Text(equals="Chrome🌍"))
 async def open_chrome(message: types.Message):
     await message.answer("Что открывать будем?", reply_markup=chrome_kb())
-    os.startfile("C:\Program Files\Google\Chrome\Application\chrome.exe")
+    wb.open_new_tab('https://')
     await Remote.chrome.set()
 
 
 @dp.message_handler(Text(equals="YouTube📺"), state=Remote.chrome)
 async def open_yt(message: types.Message):
-    pass
+    wb.open_new_tab('https://www.youtube.com/')
 
 
 @dp.message_handler(Text(equals="Telegram💬"), state=Remote.chrome)
@@ -58,11 +66,17 @@ async def open_yt(message: types.Message):
     pass
 
 
-@dp.message_handler(Text(equals=("Назад❌")), state=Remote.chrome)
-async def all_chrome(message: types.Message, state: FSMContext):
+@dp.message_handler(Text(equals=("Закрыть❌")), state=Remote.chrome)
+async def close_chrome(message: types.Message, state: FSMContext):
     await state.reset_state()
     pyautogui.hotkey('alt', 'f4')
     await message.answer("Chrome закрыт", reply_markup=start_kb())
+
+
+@dp.message_handler(Text(equals='Назад↩'), state=Remote.chrome)
+async def back_from_chrome(message: types.Message, state: FSMContext):
+    # TODO: back funtion
+    pass
 
 
 # CHROME BLOCK <<<<<<<<<<
