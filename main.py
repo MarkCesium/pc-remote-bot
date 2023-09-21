@@ -7,7 +7,7 @@ from aiogram.dispatcher.filters import Text
 import os
 import pyautogui
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from config import TOKEN_BOT
+from config import *
 from keyboards import *
 import webbrowser as wb
 
@@ -22,7 +22,6 @@ class Chrome(StatesGroup):
 
 class Steam(StatesGroup):
     base = State()
-    # TODO: Обдумать, как сделать состояния разных игр.
 
 
 class Remote(StatesGroup):
@@ -32,11 +31,8 @@ class Remote(StatesGroup):
 
 
 @dp.message_handler(commands=['start'], state='*')
-async def process_start_command(message: types.Message, state: FSMContext):
+async def process_start_command(message: types.Message):
     await message.reply("Приветус!", reply_markup=start_kb())
-    await state.set_data({
-        'chrome': False
-    })
 
 
 @dp.message_handler(Text(equals="Сфоткай📸"))
@@ -50,8 +46,7 @@ async def take_screenshot(message):
 # CHROME BLOCK >>>>>>>>>>>
 
 @dp.message_handler(Text(equals="Chrome🌍"), state='*')
-async def open_chrome(message: types.Message, state: FSMContext):
-    data = await state.get_data()
+async def open_chrome(message: types.Message):
     await Chrome.base.set()
     if data['chrome']:
         await message.answer("Уже открыт!", reply_markup=chrome_kb())
@@ -68,9 +63,7 @@ async def open_chrome(message: types.Message, state: FSMContext):
             parse_mode='HTML',
             reply_markup=chrome_kb()
         )
-        await state.update_data({
-            'chrome': True
-        })
+        data['chrome'] = True
         wb.open_new('https://')
 
 
@@ -104,16 +97,14 @@ async def open_ds(message: types.Message):
 @dp.message_handler(Text(equals=("Закрыть❌")), state=Chrome.base)
 async def close_chrome(message: types.Message, state: FSMContext):
     await state.reset_state()
-    await state.update_data({
-        'chrome': False
-    })
+    data['chrome'] = False
     pyautogui.hotkey('alt', 'f4')
     await message.answer("Chrome закрыт", reply_markup=start_kb())
 
 
 @dp.message_handler(Text(equals='Назад↩'), state=Chrome.base)
 async def back_from_chrome(message: types.Message, state: FSMContext):
-    await state.set_state('*')
+    await state.reset_state()
     await message.answer("Вы вышли из Chrome", reply_markup=start_kb())
 
 
@@ -129,16 +120,66 @@ async def open_spotify(message):
 # SPOTIFY BLOCK <<<<<<<<<<
 
 # STEAM BLOCK >>>>>>>>>>
+
 @dp.message_handler(Text(equals="Steam🎮"))
 async def open_steam(message):
-    wb.open_new('steam://rungameid/444200')
+    await Steam.base.set()
+    print(1)
+    if data['steam']['run']:
+        print(2)
+        await message.answer('Steam уже запущен!', reply_markup=steam_kb(data['steam']['games']))
+    else:
+        print(3)
+        await message.answer('Запускаю Steam!', reply_markup=steam_kb(data['steam']['games']))
+        wb.open_new('steam://games/list')
+        data['steam']['run'] = True
+
+
+@dp.message_handler(commands=['play'], state=Steam.base)
+async def open_game(message: types.Message):
+    game_name: str = message.get_args()
+    count = 0
+    for game in data['steam']['games']:
+        if game['name'] == game_name:
+            # wb.open_new(f'steam://rungameid/{game["id"]}')
+            break
+        count += 1
+    data['steam']['games'][count]['run'] = True
+    await message.answer(f'{game_name} Запускается!', reply_markup=steam_kb(data['steam']['games']))
+
+
+@dp.message_handler(commands=['close'], state=Steam.base)
+async def open_game(message: types.Message):
+    game_name: str = message.get_args()
+    count = 0
+    for game in data['steam']['games']:
+        if game['name'] == game_name:
+            # TODO: Закрытие игры
+            break
+        count += 1
+    data['steam']['games'][count]['run'] = False
+    await message.answer(f'{game_name} Закрыватся!', reply_markup=steam_kb(data['steam']['games']))
+
+
+@dp.message_handler(Text(equals=("Закрыть❌")), state=Steam.base)
+async def close_chrome(message: types.Message, state: FSMContext):
+    await state.reset_state()
+    data['steam']['run'] = False
+    # TODO: Закрытие стима
+    await message.answer("Steam закрыт", reply_markup=start_kb())
+
+
+@dp.message_handler(Text(equals='Назад↩'), state=Steam.base)
+async def back_from_chrome(message: types.Message, state: FSMContext):
+    await state.reset_state()
+    await message.answer("Вы вышли из Steam", reply_markup=start_kb())
 
 
 # STEAM BLOCK <<<<<<<<<<
 
 # PC BLOCK >>>>>>>>>>
 
-@dp.message_handler(Text(equals="Гаси ебало💤"))
+@dp.message_handler(Text(equals="Спим💤"))
 async def os_shutdown(message: types.Message):
     await Remote.pc.set()
     await message.answer('Точно?', reply_markup=pc_inline_kb())
