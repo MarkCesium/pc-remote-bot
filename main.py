@@ -28,7 +28,6 @@ class Steam(StatesGroup):
 
 class Remote(StatesGroup):
     base = State()
-    spotify = State()
     pc = State()
 
 
@@ -38,31 +37,29 @@ class Spotify(StatesGroup):
 
 @dp.message_handler(commands=['start'], state='*')
 async def process_start_command(message: types.Message):
-    await message.reply("Приветус!", reply_markup=start_kb())
+    if message.from_user.id not in ADMIN_ID:
+        await message.answer('Вы не мой хозяин!')
+    else:
+        await message.reply("Приветус!", reply_markup=start_kb())
+        await Remote.base.set()
 
-
-@dp.message_handler(Text(equals="Сфоткай📸"))
-async def take_screenshot(message):
-    await message.answer(text='Не шевелись...')
-    pyautogui.screenshot('img/screenshot.png')
-    screenshot = open("img/screenshot.png", 'rb')
-    await bot.send_photo(message.chat.id, photo=screenshot, caption="Принимай🌅")
 
 # VOLUME BLOCK >>>>>>>>>>>
-@dp.message_handler(Text(equals="Громкость🔊"))
+@dp.message_handler(Text(equals="Громкость🔊"), state=Remote.base)
 async def volume(message):
-    await message.answer(text='dj арбуз к вашим услугам', reply_markup=volume_kb())
+    await message.answer(text='dj арбуз к вашим услугам', reply_markup=volume_inline_kb())
 
 
 @dp.callback_query_handler(lambda c: c.data in ('0', '0.25', '0.5', '0.75', '1'))
-async def process_callback_button1(c: types.CallbackQuery):
+async def volume_callback(c: types.CallbackQuery):
     set_volume(float(c.data))
     await c.answer()
 
+# VOLUME BLOCK <<<<<<<<<<<
 
 # CHROME BLOCK >>>>>>>>>>>
 
-@dp.message_handler(Text(equals="Chrome🌍"), state='*')
+@dp.message_handler(Text(equals="Chrome🌍"), state=Remote.base)
 async def open_chrome(message: types.Message):
     await Chrome.base.set()
     if data['chrome']['run']:
@@ -85,12 +82,12 @@ async def open_chrome(message: types.Message):
 
 
 @dp.message_handler(commands=['tg'], state=Chrome.base)
-async def open_yt(message: types.Message):
+async def open_tg(message: types.Message):
     wb.open_new_tab('https://web.telegram.org/a/')
 
 
 @dp.message_handler(commands=['search'], state=Chrome.base)
-async def open_yt(message: types.Message):
+async def search(message: types.Message):
     query = message.text.replace(' ', '+')
     wb.open_new_tab(f'https://www.google.com/search?q={query[8:]}')
     await message.answer('Готово!', reply_markup=chrome_kb())
@@ -103,7 +100,7 @@ async def open_ds(message: types.Message):
 
 
 @dp.message_handler(commands=['yt'], state=Chrome.base)
-async def open_ds(message: types.Message):
+async def open_yt(message: types.Message):
     if len(message.text) > 3:
         query = message.text.replace(' ', '+')
         wb.open_new_tab(f'https://www.youtube.com/results?search_query={query[4:]}')
@@ -112,8 +109,8 @@ async def open_ds(message: types.Message):
 
 
 @dp.message_handler(Text(equals=("Закрыть❌")), state=Chrome.base)
-async def close_chrome(message: types.Message, state: FSMContext):
-    await state.reset_state()
+async def close_chrome(message: types.Message):
+    await Remote.base.set()
     data['chrome']['run'] = False
     pyautogui.hotkey('alt', 'f4')
     await message.answer("Chrome закрыт", reply_markup=start_kb())
@@ -121,7 +118,7 @@ async def close_chrome(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Назад↩'), state=Chrome.base)
 async def back_from_chrome(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     await message.answer("Вы вышли из Chrome", reply_markup=start_kb())
 
 
@@ -129,7 +126,7 @@ async def back_from_chrome(message: types.Message, state: FSMContext):
 
 # SPOTIFY BLOCK >>>>>>>>>>
 
-@dp.message_handler(Text(equals="Spotify🎧"))
+@dp.message_handler(Text(equals="Spotify🎧"), state=Remote.base)
 async def open_chrome(message: types.Message):
     await Spotify.base.set()
     if data['spotify']['run']:
@@ -143,7 +140,7 @@ async def open_chrome(message: types.Message):
 
 @dp.message_handler(Text(equals=("Закрыть❌")), state=Spotify.base)
 async def close_spotify(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     close_app('spotify')
     data['spotify']['run'] = False
     await message.answer("Spotify закрыт", reply_markup=start_kb())
@@ -151,7 +148,7 @@ async def close_spotify(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Назад↩'), state=Spotify.base)
 async def back_from_spotify(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     await message.answer("Вы вышли из Spotify", reply_markup=start_kb())
 
 
@@ -159,7 +156,7 @@ async def back_from_spotify(message: types.Message, state: FSMContext):
 
 # STEAM BLOCK >>>>>>>>>>
 
-@dp.message_handler(Text(equals="Steam🎮"))
+@dp.message_handler(Text(equals="Steam🎮"), state=Remote.base)
 async def open_steam(message):
     await Steam.base.set()
     print(1)
@@ -201,7 +198,7 @@ async def open_game(message: types.Message):
 
 @dp.message_handler(Text(equals=("Закрыть❌")), state=Steam.base)
 async def close_chrome(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     close_app('steam')
     data['steam']['run'] = False
     await message.answer("Steam закрыт", reply_markup=start_kb())
@@ -209,7 +206,7 @@ async def close_chrome(message: types.Message, state: FSMContext):
 
 @dp.message_handler(Text(equals='Назад↩'), state=Steam.base)
 async def back_from_chrome(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     await message.answer("Вы вышли из Steam", reply_markup=start_kb())
 
 
@@ -217,7 +214,16 @@ async def back_from_chrome(message: types.Message, state: FSMContext):
 
 # PC BLOCK >>>>>>>>>>
 
-@dp.message_handler(Text(equals="Спим💤"))
+
+@dp.message_handler(Text(equals="Сфоткай📸"), state=Remote.base)
+async def take_screenshot(message):
+    await message.answer(text='Не шевелись...')
+    pyautogui.screenshot('img/screenshot.png')
+    screenshot = open("img/screenshot.png", 'rb')
+    await bot.send_photo(message.chat.id, photo=screenshot, caption="Принимай🌅")
+
+
+@dp.message_handler(Text(equals="Спим💤"), state=Remote.base)
 async def os_shutdown(message: types.Message):
     await Remote.pc.set()
     await message.answer('Точно?', reply_markup=pc_inline_kb())
@@ -225,7 +231,7 @@ async def os_shutdown(message: types.Message):
 
 @dp.callback_query_handler(lambda c: c.data == 'yes', state=Remote.pc)
 async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     await callback_query.answer()
     await callback_query.message.delete()
     os.system("shutdown -s -t 0")
@@ -233,7 +239,7 @@ async def process_callback_button1(callback_query: types.CallbackQuery, state: F
 
 @dp.callback_query_handler(lambda c: c.data == 'no', state=Remote.pc)
 async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
-    await state.reset_state()
+    await Remote.base.set()
     await callback_query.answer()
     await callback_query.message.delete()
 

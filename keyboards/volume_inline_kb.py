@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-def volume_kb() -> InlineKeyboardMarkup:
+def volume_inline_kb() -> InlineKeyboardMarkup:
     v100_btn = InlineKeyboardButton('100%', callback_data='1')
     v75_btn = InlineKeyboardButton('75%', callback_data='0.75')
     v50_btn = InlineKeyboardButton('50%', callback_data='0.5')
